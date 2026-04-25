@@ -58,6 +58,9 @@ export const apiGenerateMatches = () => request<JobMatchResult[]>('/matches/gene
 export const apiGetJobFitExplanation = (matchId: number) =>
   request<JobFitExplanation>(`/matches/${matchId}/explanation`);
 
+export const apiApplyForJob = (matchId: number) =>
+  request('/matches/' + matchId + '/apply', { method: 'POST' });
+
 // Analytics
 export const apiGetAnalytics = () => request<AnalyticsData>('/analytics');
 

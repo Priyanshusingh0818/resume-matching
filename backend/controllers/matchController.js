@@ -162,3 +162,27 @@ export async function getJobFitExplanation(req, res) {
     res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'Failed to generate explanation.' } });
   }
 }
+
+export function applyToJob(req, res) {
+  try {
+    const matchId = Number(req.params.id);
+    const userId = Number(req.user?.id);
+    
+    // Ensure the match belongs to the user
+    const match = db.prepare('SELECT id FROM matches WHERE id = ? AND user_id = ?').get(matchId, userId);
+    if (!match) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Match not found or unauthorized.' } });
+    }
+
+    db.prepare('UPDATE matches SET is_applied = 1 WHERE id = ?').run(matchId);
+    
+    // Log the application event
+    logAnalyticsEvent(userId, 'job_applied', { matchId });
+
+    res.json({ success: true, message: 'Successfully applied to job.' });
+  } catch (error) {
+    console.error('[matchController] applyToJob error:', error.message);
+    res.status(500).json({ success: false, error: { code: 'APPLY_FAILED', message: 'Failed to apply for job.' } });
+  }
+}
+

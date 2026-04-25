@@ -122,6 +122,7 @@ function initializeDatabase() {
   };
 
   safeAddColumn('matches', 'status', "TEXT DEFAULT 'Pending'");
+  safeAddColumn('matches', 'is_applied', 'INTEGER DEFAULT 0');
   safeAddColumn('matches', 'insights', 'TEXT');
   safeAddColumn('matches', 'skills_score', 'REAL DEFAULT 0');
   safeAddColumn('matches', 'experience_score', 'REAL DEFAULT 0');

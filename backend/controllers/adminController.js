@@ -19,11 +19,11 @@ export function getAdminResumes(req, res) {
              m.skills_score, m.experience_score, m.status, r.content as resume_content,
              j.title as role
       FROM users u
-      JOIN profiles p ON u.id = p.user_id
+      LEFT JOIN profiles p ON u.id = p.user_id
       JOIN matches m ON u.id = m.user_id
       JOIN jobs j ON m.job_id = j.id
       LEFT JOIN resumes r ON u.id = r.user_id
-      WHERE m.score > 0
+      WHERE m.is_applied = 1
       ORDER BY m.score DESC
     `).all();
 
@@ -87,8 +87,8 @@ export function exportCandidatesCSV(req, res) {
     const { status } = req.query;
     let query = `
       SELECT m.id, u.name, u.email, p.location, p.phone, p.education, m.score, m.status, r.content as resume_content
-      FROM users u JOIN profiles p ON u.id = p.user_id JOIN matches m ON u.id = m.user_id
-      LEFT JOIN resumes r ON u.id = r.user_id WHERE m.score > 0`;
+      FROM users u LEFT JOIN profiles p ON u.id = p.user_id JOIN matches m ON u.id = m.user_id
+      LEFT JOIN resumes r ON u.id = r.user_id WHERE m.is_applied = 1`;
     const params = [];
 
     if (status && status !== 'all') {

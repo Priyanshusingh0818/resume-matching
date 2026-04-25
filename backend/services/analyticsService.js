@@ -179,6 +179,7 @@ export function computeAdminAnalytics() {
     JOIN users u ON m.user_id = u.id
     JOIN jobs j ON m.job_id = j.id
     LEFT JOIN profiles p ON u.id = p.user_id
+    WHERE m.is_applied = 1
     ORDER BY m.created_at DESC LIMIT 10
   `).all();
 

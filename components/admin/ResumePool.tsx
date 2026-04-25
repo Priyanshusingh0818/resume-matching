@@ -11,7 +11,7 @@ const ResumePool: React.FC = () => {
   const [candidates, setCandidates] = useState<AdminCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [insightModal, setInsightModal] = useState<{id: number; insight: string} | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
 
@@ -19,7 +19,14 @@ const ResumePool: React.FC = () => {
     const load = async () => {
       try {
         const res = await apiGetAdminResumes();
-        setCandidates(res.data || []);
+        const data = res.data || [];
+        setCandidates(data);
+        
+        // Notify admin of new pending applications
+        const pendingCount = data.filter((c: AdminCandidate) => c.status === 'Pending').length;
+        if (pendingCount > 0) {
+          addToast('success', `You have ${pendingCount} new pending application${pendingCount !== 1 ? 's' : ''}`);
+        }
       } catch (err: any) { addToast('error', err.message); }
       finally { setIsLoading(false); }
     };
@@ -54,7 +61,15 @@ const ResumePool: React.FC = () => {
 
   const filtered = candidates.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.role.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchStatus = statusFilter === 'all' || c.status === statusFilter;
+    
+    // Status Filter Logic: 'active' hides Rejected.
+    let matchStatus = true;
+    if (statusFilter === 'active') {
+      matchStatus = c.status !== 'Rejected';
+    } else if (statusFilter !== 'all') {
+      matchStatus = c.status === statusFilter;
+    }
+
     return matchSearch && matchStatus;
   });
 
@@ -75,6 +90,7 @@ const ResumePool: React.FC = () => {
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="input-field text-sm w-36" aria-label="Filter by status">
+            <option value="active">Active (No Rejected)</option>
             <option value="all">All Status</option>
             <option value="Pending">Pending</option>
             <option value="Reviewed">Reviewed</option>

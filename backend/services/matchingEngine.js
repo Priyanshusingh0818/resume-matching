@@ -35,7 +35,11 @@ export function generateMatchesForUser(userId) {
   // 2. Fetch all jobs
   const jobs = db.prepare('SELECT * FROM jobs ORDER BY created_at DESC').all();
 
-  // 3. Clear old matches for this user
+  // 3. Cache existing matches to preserve status, is_applied, and insights
+  const existingMatches = db.prepare('SELECT job_id, status, is_applied, insights FROM matches WHERE user_id = ?').all(userId);
+  const existingMap = new Map(existingMatches.map(m => [m.job_id, m]));
+
+  // Clear old matches for this user
   db.prepare('DELETE FROM matches WHERE user_id = ?').run(userId);
 
   // 4. Compute match scores
@@ -45,18 +49,24 @@ export function generateMatchesForUser(userId) {
     if (!Array.isArray(jobSkills)) continue;
 
     const matchResult = computeJobMatchScore(parsedData, rawText, jobSkills, job.description);
+    
+    // Restore previous state if it exists
+    const prev = existingMap.get(job.id) || { status: 'Pending', is_applied: 0, insights: null };
 
-    // Insert match with breakdown
+    // Insert match with breakdown and preserved state
     const insertResult = db.prepare(`
-      INSERT INTO matches (user_id, job_id, score, skills_score, experience_score, education_score, keyword_score, quality_score, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+      INSERT INTO matches (user_id, job_id, score, skills_score, experience_score, education_score, keyword_score, quality_score, status, is_applied, insights)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       userId, job.id, matchResult.total,
       matchResult.breakdown.skills,
       matchResult.breakdown.experience,
       matchResult.breakdown.education,
       matchResult.breakdown.keywords,
-      matchResult.breakdown.quality
+      matchResult.breakdown.quality,
+      prev.status,
+      prev.is_applied,
+      prev.insights
     );
 
     results.push({
@@ -74,6 +84,7 @@ export function generateMatchesForUser(userId) {
         breakdown: matchResult.breakdown,
         experienceMatch: matchResult.breakdown.experience >= 50,
         educationMatch: matchResult.breakdown.education >= 50,
+        is_applied: prev.is_applied === 1
       },
     });
   }

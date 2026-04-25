@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Search, CheckCircle, XCircle, ChevronRight, Briefcase, X, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
-import { apiGenerateMatches, apiGetJobFitExplanation } from '../../services/api';
+import { apiGenerateMatches, apiGetJobFitExplanation, apiApplyForJob } from '../../services/api';
 import { JobMatchResult, JobFitExplanation, ScoreBreakdown } from '../../types';
 import { SkeletonPage } from '../shared/Skeleton';
 import EmptyState from '../shared/EmptyState';
@@ -272,10 +272,32 @@ const JobMatching: React.FC = () => {
 
             <div className="p-4 border-t border-border flex justify-end gap-3">
               <button onClick={() => setSelectedJob(null)} className="btn-secondary text-sm">Close</button>
-              <button onClick={() => { addToast('success', `Application noted for ${selectedJob.company}`); setSelectedJob(null); }}
-                className="btn-primary text-sm flex items-center gap-2">
-                Apply <ChevronRight className="w-4 h-4" />
-              </button>
+              {selectedJob.match.is_applied ? (
+                <button disabled className="btn-primary text-sm flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border-emerald-500/30 opacity-100 cursor-not-allowed hover:bg-emerald-500/20">
+                  <CheckCircle className="w-4 h-4" /> Applied
+                </button>
+              ) : (
+                <button onClick={async () => {
+                  try {
+                    await apiApplyForJob(selectedJob.match.matchId);
+                    addToast('success', `Application submitted for ${selectedJob.company}`);
+                    
+                    // Update local state to reflect application
+                    const updatedJobs = jobs.map(j => 
+                      j.match.matchId === selectedJob.match.matchId 
+                        ? { ...j, match: { ...j.match, is_applied: true } } 
+                        : j
+                    );
+                    setJobs(updatedJobs);
+                    setSelectedJob({ ...selectedJob, match: { ...selectedJob.match, is_applied: true } });
+                  } catch (err: any) {
+                    addToast('error', err.message || 'Failed to apply');
+                  }
+                }}
+                  className="btn-primary text-sm flex items-center gap-2">
+                  Apply <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>

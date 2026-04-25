@@ -36,6 +36,7 @@ export interface MatchResult {
   breakdown: ScoreBreakdown;
   experienceMatch: boolean;
   educationMatch: boolean;
+  is_applied?: boolean;
 }
 
 export interface JobMatchResult {
