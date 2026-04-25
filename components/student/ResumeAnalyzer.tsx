@@ -21,6 +21,7 @@ const ResumeAnalyzer: React.FC = () => {
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
   const [improvements, setImprovements] = useState<ResumeImprovements | null>(null);
   const [loadingImprovements, setLoadingImprovements] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     const fetchPrevious = async () => {
@@ -33,9 +34,10 @@ const ResumeAnalyzer: React.FC = () => {
     fetchPrevious();
   }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
+  const processFile = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Please upload a PDF file.'); return;
+    }
     if (file.size > 10 * 1024 * 1024) { setError('File too large. Max 10MB.'); return; }
 
     setError('');
@@ -52,6 +54,21 @@ const ResumeAnalyzer: React.FC = () => {
       addToast('error', 'Resume analysis failed. Please try again.');
     } finally { setIsUploading(false); }
   };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    processFile(e.target.files[0]);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+  const handleDragLeave = () => setIsDragOver(false);
 
   const loadImprovements = async () => {
     setLoadingImprovements(true);
@@ -91,7 +108,13 @@ const ResumeAnalyzer: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Upload */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="glass-card p-8 text-center relative overflow-hidden group">
+          <div className={`glass-card p-8 text-center relative overflow-hidden group transition-all duration-200 ${
+              isDragOver ? 'border-primary/60 bg-primary/5 ring-2 ring-primary/20' : ''
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
             {!isUploading && (
               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileChange} accept=".pdf" aria-label="Upload resume PDF" />
             )}
@@ -118,8 +141,8 @@ const ResumeAnalyzer: React.FC = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Upload className="w-8 h-8 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-200 mb-1">Upload Resume</h3>
-                <p className="text-sm text-gray-500 mb-5">PDF format, max 10MB</p>
+                <h3 className="text-lg font-bold text-gray-200 mb-1">{isDragOver ? 'Drop your PDF here' : 'Upload Resume'}</h3>
+                <p className="text-sm text-gray-500 mb-5">Drag & drop or click to browse • PDF, max 10MB</p>
                 <span className="btn-primary text-sm">Browse Files</span>
               </div>
             )}

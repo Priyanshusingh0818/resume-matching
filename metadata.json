@@ -1,7 +1,4 @@
 {
   "name": "SmartMatch AI Resume System",
-  "description": "Enterprise-grade AI-powered resume analyzer and job matching platform with dedicated portals for students and recruiters.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "description": "Enterprise-grade AI-powered resume analyzer and job matching platform with dedicated portals for students and recruiters."
 }

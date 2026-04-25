@@ -27,8 +27,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<{ suc
 }
 
 // Auth
-export const apiRegister = (name: string, email: string, password: string, role: string) =>
-  request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role }) });
+export const apiRegister = (name: string, email: string, password: string, role: string, invite_code?: string) =>
+  request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role, ...(invite_code ? { invite_code } : {}) }) });
 
 export const apiLogin = (email: string, password: string) =>
   request<{ token: string; user: any }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
@@ -84,6 +84,10 @@ export const apiGetProfile = () => request<any>('/profile');
 
 export const apiUpdateProfile = (data: any) =>
   request('/profile', { method: 'PUT', body: JSON.stringify(data) });
+
+// Password
+export const apiChangePassword = (currentPassword: string, newPassword: string) =>
+  request('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
 
 // re-export types
 export type { ResumeAnalysis as AIResumeAnalysis, JobMatchResult, AnalyticsData, AdminStats };

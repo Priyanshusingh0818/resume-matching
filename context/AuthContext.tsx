@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiLogin as apiLoginFn } from '../services/api';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 interface User {
   id: number;
   name: string;
@@ -28,12 +30,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    if (stored && token) {
-      try { setUser(JSON.parse(stored)); } catch { localStorage.clear(); }
-    }
-    setLoading(false);
+    const validateSession = async () => {
+      const stored = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!stored || !token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Validate the token against the server
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            const userObj: User = {
+              id: json.data.id,
+              name: json.data.name,
+              email: json.data.email,
+              role: json.data.role,
+              userType: json.data.role,
+            };
+            localStorage.setItem('user', JSON.stringify(userObj));
+            setUser(userObj);
+          } else {
+            localStorage.clear();
+          }
+        } else {
+          // Token expired or invalid
+          localStorage.clear();
+        }
+      } catch {
+        // Server unreachable — trust local data for offline dev
+        try { setUser(JSON.parse(stored)); } catch { localStorage.clear(); }
+      }
+      setLoading(false);
+    };
+    validateSession();
   }, []);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {

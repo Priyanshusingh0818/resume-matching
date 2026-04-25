@@ -33,7 +33,9 @@ async function callWithRetry(promptMessages, options = {}) {
         params.response_format = { type: 'json_object' };
       }
 
-      const completion = await client.chat.completions.create(params);
+      const completion = await client.chat.completions.create(params, {
+        signal: controller.signal,
+      });
       clearTimeout(timeout);
 
       const content = completion.choices?.[0]?.message?.content;

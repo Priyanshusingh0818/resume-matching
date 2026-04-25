@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Mail, Lock, User, ChevronRight, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Mail, Lock, User, ChevronRight, Loader2, AlertCircle, Sparkles, Shield, Eye, EyeOff } from 'lucide-react';
 import { apiRegister } from '../../services/api';
 
 const Register: React.FC = () => {
@@ -8,6 +8,8 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -30,10 +32,13 @@ const Register: React.FC = () => {
     if (password !== confirmPassword) {
       setError('Passwords do not match.'); return;
     }
+    if (role === 'admin' && !inviteCode.trim()) {
+      setError('Admin invite code is required.'); return;
+    }
 
     setLoading(true);
     try {
-      await apiRegister(name.trim(), email.trim(), password, role);
+      await apiRegister(name.trim(), email.trim(), password, role, role === 'admin' ? inviteCode.trim() : undefined);
       navigate(loginPath, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
@@ -43,6 +48,7 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface p-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/3 translate-x-1/3" />
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3" />
 
       <div className="w-full max-w-md space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-3">
@@ -80,18 +86,33 @@ const Register: React.FC = () => {
               <label htmlFor="reg-password" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input id="reg-password" type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading}
-                  className="input-field pl-11" placeholder="Min 6 characters" required autoComplete="new-password" />
+                <input id="reg-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} disabled={loading}
+                  className="input-field pl-11 pr-11" placeholder="Min 6 characters" required autoComplete="new-password" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
             <div>
               <label htmlFor="reg-confirm" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Confirm Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input id="reg-confirm" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={loading}
+                <input id="reg-confirm" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={loading}
                   className="input-field pl-11" placeholder="••••••••" required autoComplete="new-password" />
               </div>
             </div>
+
+            {role === 'admin' && (
+              <div>
+                <label htmlFor="reg-invite" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Admin Invite Code</label>
+                <div className="relative">
+                  <Shield className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input id="reg-invite" type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} disabled={loading}
+                    className="input-field pl-11" placeholder="Enter invite code" required />
+                </div>
+                <p className="text-xs text-gray-600 mt-1.5">Contact your organization admin for the invite code.</p>
+              </div>
+            )}
           </div>
 
           <button type="submit" disabled={loading} className="w-full btn-primary py-4 text-base flex items-center justify-center gap-2 disabled:opacity-60">

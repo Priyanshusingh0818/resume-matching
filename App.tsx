@@ -22,6 +22,7 @@ import JobPosting from './components/admin/JobPosting';
 import ResumePool from './components/admin/ResumePool';
 import AdminProfile from './components/admin/AdminProfile';
 import Configuration from './components/admin/Configuration';
+import LandingPage from './components/LandingPage';
 
 // Shared
 import Sidebar from './components/shared/Sidebar';
@@ -58,7 +59,7 @@ const App: React.FC = () => (
       <ToastProvider>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Navigate to="/student/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/student/register" element={<Register />} />

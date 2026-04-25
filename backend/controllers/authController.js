@@ -63,6 +63,18 @@ export async function register(req, res) {
       });
     }
 
+    // ── Admin invite code gate ─────────────────────────────────────────────
+    if (role === 'admin') {
+      const inviteCode = req.body.invite_code;
+      const requiredCode = process.env.ADMIN_INVITE_CODE;
+      if (requiredCode && inviteCode !== requiredCode) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid or missing admin invite code.',
+        });
+      }
+    }
+
     // ── Check for duplicate email ──────────────────────────────────────────
     const existingUser = db
       .prepare('SELECT id FROM users WHERE email = ?')
@@ -190,5 +202,50 @@ export function getMe(req, res) {
   } catch (err) {
     console.error('[authController] getMe error:', err.message);
     return res.status(500).json({ success: false, message: 'Could not fetch profile.' });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PUT /api/auth/password   (protected — requires valid JWT)
+// Body: { currentPassword, newPassword }
+// ──────────────────────────────────────────────────────────────────────────────
+export async function changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'currentPassword and newPassword are required.',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters.',
+      });
+    }
+
+    // Fetch user with password hash
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    // Hash and save new password
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.user.id);
+
+    return res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (err) {
+    console.error('[authController] changePassword error:', err.message);
+    return res.status(500).json({ success: false, message: 'Password change failed.' });
   }
 }

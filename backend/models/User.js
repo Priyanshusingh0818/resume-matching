@@ -33,7 +33,7 @@ const User = {
    * @param {{ name: string, email: string, password: string, role?: string }} data
    * @returns {{ id: number }} last-insert-rowid wrapped in an object
    */
-  create({ name, email, password, role = 'jobseeker' }) {
+  create({ name, email, password, role = 'student' }) {
     const stmt = db.prepare(
       'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)'
     );
