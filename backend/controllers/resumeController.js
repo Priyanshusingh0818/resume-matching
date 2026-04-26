@@ -1,5 +1,5 @@
 import db from '../db.js';
-import { parseResumePDF } from '../services/resumeParser.js';
+import { parseResumeFile } from '../services/resumeParser.js';
 import { computeATSScore } from '../services/scoringEngine.js';
 import { generateResumeImprovements } from '../services/aiService.js';
 import { logAnalyticsEvent } from '../services/analyticsService.js';
@@ -13,8 +13,8 @@ export async function uploadAndAnalyzeResume(req, res, next) {
 
     const userId = req.user.id;
 
-    // Step 1: Parse PDF
-    const { rawText, parsedData, aiUsed } = await parseResumePDF(req.file.buffer);
+    // Step 1: Parse PDF or DOCX
+    const { rawText, parsedData, aiUsed } = await parseResumeFile(req.file.buffer, req.file.originalname);
 
     // Step 2: Compute deterministic ATS score
     const atsResult = computeATSScore(parsedData, rawText);
@@ -32,12 +32,12 @@ export async function uploadAndAnalyzeResume(req, res, next) {
 
     if (existingResume) {
       const newVersion = (existingResume.version || 1) + 1;
-      db.prepare('UPDATE resumes SET content = ?, score = ?, raw_text = ?, version = ? WHERE user_id = ?')
-        .run(contentString, atsResult.total, rawText, newVersion, userId);
+      db.prepare('UPDATE resumes SET content = ?, score = ?, raw_text = ?, version = ?, file_data = ?, file_name = ?, file_type = ? WHERE user_id = ?')
+        .run(contentString, atsResult.total, rawText, newVersion, req.file.buffer, req.file.originalname, req.file.mimetype, userId);
       resumeId = existingResume.id;
     } else {
-      const result = db.prepare('INSERT INTO resumes (user_id, content, score, raw_text, version) VALUES (?, ?, ?, ?, 1)')
-        .run(userId, contentString, atsResult.total, rawText);
+      const result = db.prepare('INSERT INTO resumes (user_id, content, score, raw_text, version, file_data, file_name, file_type) VALUES (?, ?, ?, ?, 1, ?, ?, ?)')
+        .run(userId, contentString, atsResult.total, rawText, req.file.buffer, req.file.originalname, req.file.mimetype);
       resumeId = Number(result.lastInsertRowid);
     }
 
@@ -104,7 +104,7 @@ export async function uploadAndAnalyzeResume(req, res, next) {
 export async function getResume(req, res) {
   try {
     const userId = req.user.id;
-    const resume = db.prepare('SELECT content, score, raw_text FROM resumes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(userId);
+    const resume = db.prepare('SELECT content, score, raw_text, file_name FROM resumes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(userId);
 
     if (!resume) {
       return res.json({ success: true, data: null });
@@ -144,6 +144,7 @@ export async function getResume(req, res) {
         experience_entries: parsedData.experience_entries || [],
         education_entries: parsedData.education_entries || [],
         certifications: parsedData.certifications || [],
+        file_name: resume.file_name || null,
       },
     });
   } catch (error) {
@@ -193,5 +194,23 @@ export async function getResumeImprovements(req, res) {
   } catch (error) {
     console.error('[resumeController] getResumeImprovements error:', error);
     return res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'Failed to generate improvements.' } });
+  }
+}
+
+export async function downloadResume(req, res) {
+  try {
+    const userId = req.user.id;
+    const resume = db.prepare('SELECT file_data, file_name, file_type FROM resumes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(userId);
+
+    if (!resume || !resume.file_data) {
+      return res.status(404).json({ success: false, error: { message: 'Original file not found. Please upload again.' } });
+    }
+
+    res.setHeader('Content-Type', resume.file_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${resume.file_name || 'resume.pdf'}"`);
+    return res.send(resume.file_data);
+  } catch (error) {
+    console.error('[resumeController] downloadResume error:', error);
+    return res.status(500).json({ success: false, error: { message: 'Failed to download resume.' } });
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Loader2, Briefcase, X, AlertCircle, Building2 } from 'lucide-react';
-import { apiGetJobs, apiCreateJob, apiDeleteJob } from '../../services/api';
+import { Plus, Trash2, Edit2, Loader2, Briefcase, X, AlertCircle, Building2 } from 'lucide-react';
+import { apiGetJobs, apiCreateJob, apiDeleteJob, apiUpdateJob } from '../../services/api';
 import { Job } from '../../types';
 import { useToast } from '../shared/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,7 @@ const JobPosting: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingJobId, setEditingJobId] = useState<number | null>(null);
   const [form, setForm] = useState({ title: '', description: '', skillInput: '' });
   const [skills, setSkills] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -45,14 +46,31 @@ const JobPosting: React.FC = () => {
     }
     setSaving(true);
     try {
-      await apiCreateJob({ title: form.title, company: companyName, description: form.description, skills });
-      addToast('success', 'Job posted successfully');
+      if (editingJobId) {
+        await apiUpdateJob(editingJobId, { title: form.title, company: companyName, description: form.description, skills });
+        addToast('success', 'Job updated successfully');
+      } else {
+        await apiCreateJob({ title: form.title, company: companyName, description: form.description, skills });
+        addToast('success', 'Job posted successfully');
+      }
       setForm({ title: '', description: '', skillInput: '' });
       setSkills([]);
+      setEditingJobId(null);
       setShowForm(false);
       loadJobs();
     } catch (err: any) { setError(err.message); }
     finally { setSaving(false); }
+  };
+
+  const handleEdit = (job: Job) => {
+    let sk: string[] = [];
+    try { sk = typeof job.skills === 'string' ? JSON.parse(job.skills as unknown as string) : job.skills; } catch {}
+    
+    setForm({ title: job.title, description: job.description, skillInput: '' });
+    setSkills(sk);
+    setEditingJobId(job.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id: number) => {
@@ -72,7 +90,12 @@ const JobPosting: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-100">Job Posting</h1>
           <p className="text-gray-500 mt-1">{jobs.length} active positions</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary text-sm flex items-center gap-2">
+        <button onClick={() => { 
+          setEditingJobId(null); 
+          setForm({ title: '', description: '', skillInput: '' }); 
+          setSkills([]); 
+          setShowForm(!showForm); 
+        }} className="btn-primary text-sm flex items-center gap-2">
           <Plus className="w-4 h-4" /> New Job
         </button>
       </div>
@@ -121,8 +144,8 @@ const JobPosting: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-60">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {saving ? 'Posting...' : 'Post Job'}
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingJobId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+              {saving ? (editingJobId ? 'Updating...' : 'Posting...') : (editingJobId ? 'Update Job' : 'Post Job')}
             </button>
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm">Cancel</button>
           </div>
@@ -152,9 +175,14 @@ const JobPosting: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => handleDelete(job.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors shrink-0" title="Delete job">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => handleEdit(job)} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-primary/10 rounded-lg transition-colors" title="Edit job">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(job.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete job">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             );
           })}

@@ -5,21 +5,28 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 
-export async function parseResumePDF(fileBuffer) {
-  // Step 1: Extract raw text from PDF
+export async function parseResumeFile(fileBuffer, originalName = '') {
+  // Step 1: Extract raw text from file
   let rawText = '';
+  const lowerName = originalName.toLowerCase();
   try {
-    const data = await pdfParse(fileBuffer);
-    rawText = data.text || '';
+    if (lowerName.endsWith('.docx')) {
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      rawText = result.value || '';
+    } else {
+      const data = await pdfParse(fileBuffer);
+      rawText = data.text || '';
+    }
   } catch (err) {
-    throw new Error('Could not extract text from PDF. Ensure the file is a valid, text-based PDF.');
+    throw new Error('Could not extract text from file. Ensure the file is a valid PDF or DOCX.');
   }
 
   // Step 2: Clean and normalize
   const cleanedText = cleanResumeText(rawText);
   if (!cleanedText || cleanedText.length < 20) {
-    throw new Error('PDF appears empty or contains too little text to analyze.');
+    throw new Error('empty pdf nothing to show');
   }
 
   // Step 3: Send to LLM with strict JSON schema + validate with Zod

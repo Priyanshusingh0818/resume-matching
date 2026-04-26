@@ -42,6 +42,13 @@ export const apiUploadResume = (file: File) => {
 
 export const apiGetResume = () => request<ResumeAnalysis | null>('/resume');
 
+export const apiDownloadResume = async () => {
+  const headers = getAuthHeaders();
+  const res = await fetch(`${API_BASE}/resume/download`, { headers });
+  if (!res.ok) throw new Error('Download failed');
+  return res.blob();
+};
+
 export const apiGetResumeImprovements = () => request<ResumeImprovements>('/resume/improvements');
 
 // Jobs
@@ -49,6 +56,9 @@ export const apiGetJobs = () => request<Job[]>('/jobs');
 
 export const apiCreateJob = (job: { title: string; description: string; skills: string[]; company: string }) =>
   request('/jobs', { method: 'POST', body: JSON.stringify(job) });
+
+export const apiUpdateJob = (id: number, job: { title: string; description: string; skills: string[]; company?: string }) =>
+  request(`/jobs/${id}`, { method: 'PUT', body: JSON.stringify(job) });
 
 export const apiDeleteJob = (id: number) => request(`/jobs/${id}`, { method: 'DELETE' });
 

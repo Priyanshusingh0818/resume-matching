@@ -131,6 +131,9 @@ function initializeDatabase() {
   safeAddColumn('matches', 'quality_score', 'REAL DEFAULT 0');
   safeAddColumn('resumes', 'raw_text', "TEXT DEFAULT ''");
   safeAddColumn('resumes', 'version', 'INTEGER DEFAULT 1');
+  safeAddColumn('resumes', 'file_data', 'BLOB');
+  safeAddColumn('resumes', 'file_name', 'TEXT');
+  safeAddColumn('resumes', 'file_type', 'TEXT');
 
   // === Indexes ===
   db.exec('CREATE INDEX IF NOT EXISTS idx_matches_user_id ON matches(user_id);');

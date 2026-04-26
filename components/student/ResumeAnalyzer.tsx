@@ -35,8 +35,8 @@ const ResumeAnalyzer: React.FC = () => {
   }, []);
 
   const processFile = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setError('Please upload a PDF file.'); return;
+    if (!file.name.toLowerCase().endsWith('.pdf') && !file.name.toLowerCase().endsWith('.docx')) {
+      setError('Please upload a PDF or DOCX file.'); return;
     }
     if (file.size > 10 * 1024 * 1024) { setError('File too large. Max 10MB.'); return; }
 
@@ -116,7 +116,7 @@ const ResumeAnalyzer: React.FC = () => {
             onDragLeave={handleDragLeave}
           >
             {!isUploading && (
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileChange} accept=".pdf" aria-label="Upload resume PDF" />
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileChange} accept=".pdf,.docx" aria-label="Upload resume PDF or DOCX" />
             )}
             {isUploading ? (
               <div className="py-10 flex flex-col items-center">
@@ -130,10 +130,10 @@ const ResumeAnalyzer: React.FC = () => {
                   <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-200 mb-1">Resume Analyzed</h3>
-                <p className="text-sm text-gray-500 mb-4">Upload a new PDF to re-analyze</p>
+                <p className="text-sm text-gray-500 mb-4">Upload a new file to re-analyze</p>
                 <div className="relative inline-block">
                   <button className="btn-secondary text-sm">Upload New Resume</button>
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} accept=".pdf" />
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} accept=".pdf,.docx" />
                 </div>
               </div>
             ) : (
@@ -141,8 +141,8 @@ const ResumeAnalyzer: React.FC = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Upload className="w-8 h-8 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-200 mb-1">{isDragOver ? 'Drop your PDF here' : 'Upload Resume'}</h3>
-                <p className="text-sm text-gray-500 mb-5">Drag & drop or click to browse • PDF, max 10MB</p>
+                <h3 className="text-lg font-bold text-gray-200 mb-1">{isDragOver ? 'Drop your file here' : 'Upload Resume'}</h3>
+                <p className="text-sm text-gray-500 mb-5">Drag & drop or click to browse • PDF, DOCX, max 10MB</p>
                 <span className="btn-primary text-sm">Browse Files</span>
               </div>
             )}

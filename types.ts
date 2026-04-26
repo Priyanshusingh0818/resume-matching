@@ -25,6 +25,7 @@ export interface ResumeAnalysis {
   experience_entries?: { title: string; company: string; duration: string; description: string }[];
   education_entries?: { degree: string; field: string; school: string; year: string; gpa: string }[];
   certifications?: string[];
+  file_name?: string;
   aiUsed: boolean;
 }
 

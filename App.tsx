@@ -15,6 +15,7 @@ import JobMatching from './components/student/JobMatching';
 import JobListings from './components/student/JobListings';
 import Analytics from './components/student/Analytics';
 import StudentProfile from './components/student/StudentProfile';
+import MyResumes from './components/student/MyResumes';
 
 // Admin
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -73,6 +74,7 @@ const App: React.FC = () => (
             <Route path="/student/jobs" element={<JobListings />} />
             <Route path="/student/analytics" element={<Analytics />} />
             <Route path="/student/profile" element={<StudentProfile />} />
+            <Route path="/student/my-resumes" element={<MyResumes />} />
           </Route>
 
           {/* Admin */}

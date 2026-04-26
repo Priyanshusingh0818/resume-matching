@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
     { path: '/student/resume-analyzer', label: 'Resume Analyzer', icon: FileText },
     { path: '/student/job-matching', label: 'Job Matching', icon: Target },
     { path: '/student/jobs', label: 'Browse Jobs', icon: Briefcase },
+    { path: '/student/my-resumes', label: 'My Resumes', icon: FileText },
     { path: '/student/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/student/profile', label: 'Profile', icon: User },
   ];
